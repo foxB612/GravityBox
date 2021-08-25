@@ -297,6 +297,7 @@ public abstract class TrafficMeterAbstract extends TextView
         if (shoudStartTrafficUpdates()) {
             startTrafficUpdates();
             setVisibility(View.VISIBLE);
+            updateLayoutParams();
             if (DEBUG) log("traffic updates started");
         } else {
             stopTrafficUpdates();
@@ -304,6 +305,19 @@ public abstract class TrafficMeterAbstract extends TextView
             setText("");
             if (DEBUG) log("traffic updates stopped");
         }
+    }
+
+    public void updateLayoutParams() {
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) getLayoutParams();
+        if (lp == null) return;
+        lp.width = getProperWidth();
+        // Not sure if this will happen. Just in case.
+        if (lp.width <= 0) {
+            lp.width = LayoutParams.WRAP_CONTENT;
+            if (DEBUG) log("traffic meter get non-positive width");
+        }
+        lp.weight = 0;
+        setLayoutParams(lp);
     }
 
     @Override
@@ -341,6 +355,7 @@ public abstract class TrafficMeterAbstract extends TextView
     protected abstract void onPreferenceChanged(Intent intent);
     protected abstract void startTrafficUpdates();
     protected abstract void stopTrafficUpdates();
+    protected abstract int getProperWidth();
 
     @SuppressLint("DiscouragedPrivateApi")
     protected boolean canUsePrimaryMethod() {

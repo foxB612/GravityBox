@@ -19,9 +19,12 @@ package com.ceco.r.gravitybox;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 
 import java.text.DecimalFormat;
@@ -51,6 +54,7 @@ public class TrafficMeter extends TrafficMeterAbstract {
 
     public TrafficMeter(Context context) {
         super(context);
+        setGravity(Gravity.CENTER);
     }
 
     @Override
@@ -84,6 +88,34 @@ public class TrafficMeter extends TrafficMeterAbstract {
     }
 
     @Override
+    protected int getProperWidth() {
+        float fontSizePx = (TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mSize,
+                getResources().getDisplayMetrics()));
+        return calculateWidth(fontSizePx);
+    }
+    private int calculateWidth(float textSizePx)
+    {
+        Paint paint = new Paint();
+        Rect bounds = new Rect();
+
+        paint.setTypeface(getTypeface());
+        paint.setTextSize(textSizePx);
+
+        // Assume at most 3 digits. May need to introduce GB/s.
+        // Use extra "||" to make sure space is enough
+        String text = "||88.8";
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        int numberWidth = bounds.width();
+
+        // Assume M has the largest width. May not work with some languages?
+        text = "||" + mMB + "/" + mS;
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        int unitWidth = bounds.width();
+
+        return Math.max(numberWidth, unitWidth);
+    }
+
+    @Override
     protected void startTrafficUpdates() {
         mTotalRxBytes = getTotalRxTxBytes()[0];
         mLastUpdateTime = SystemClock.elapsedRealtime();
@@ -102,26 +134,28 @@ public class TrafficMeter extends TrafficMeterAbstract {
     }
 
     private String formatTraffic(long bytes, boolean speed) {
+        // Break "xxx MB/s" into two lines to save space
+        // TODO: Need a better style for summary since it has parentheses
         if (bytes > 10485760) { // 1024 * 1024 * 10
             return (speed ? "" : "(")
                     + mIntegerFormat.format(bytes / 1048576)
-                    + (speed ? mMB + "/" + mS : mMB + ")");
+                    + "\n" + (speed ? mMB + "/" + mS : mMB + ")");
         } else if (bytes > 1048576) { // 1024 * 1024
             return (speed ? "" : "(")
                     + mDecimalFormat.format(((float) bytes) / 1048576f)
-                    + (speed ? mMB + "/" + mS : mMB + ")");
+                    + "\n" + (speed ? mMB + "/" + mS : mMB + ")");
         } else if (bytes > 10240) { // 1024 * 10
             return (speed ? "" : "(")
                     + mIntegerFormat.format(bytes / 1024)
-                    + (speed ? mKB + "/" + mS : mKB + ")");
+                    + "\n" + (speed ? mKB + "/" + mS : mKB + ")");
         } else if (bytes > 1024) { // 1024
             return (speed ? "" : "(")
                     + mDecimalFormat.format(((float) bytes) / 1024f)
-                    + (speed ? mKB + "/" + mS : mKB + ")");
+                    + "\n" + (speed ? mKB + "/" + mS : mKB + ")");
         } else {
             return (speed ? "" : "(")
                     + mIntegerFormat.format(bytes)
-                    + (speed ? mB + "/" + mS : mB + ")");
+                    + "\n" + (speed ? mB + "/" + mS : mB + ")");
         }
     }
 

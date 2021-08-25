@@ -30,6 +30,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
@@ -65,6 +67,7 @@ public class TrafficMeterOmni extends TrafficMeterAbstract {
     private int GB = MB * KB;
     private Mode mMode;
     private int mIconColor;
+    private int mIconWidth = 0;
     private boolean mShowIcon;
     private boolean mAutoHide;
     private int mAutoHideThreshold;
@@ -214,6 +217,30 @@ public class TrafficMeterOmni extends TrafficMeterAbstract {
         txtSizeMulti = (int) (TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, mSize-4,
                 resources.getDisplayMetrics()));
     }
+    @Override
+    protected int getProperWidth() {
+        if (mMode == Mode.IN_OUT) {
+            return calculateWidth(txtSizeMulti);
+        } else {
+            return calculateWidth(txtSizeSingle);
+        }
+    }
+    private int calculateWidth(float textSizePx)
+    {
+        Paint paint = new Paint();
+        Rect bounds = new Rect();
+
+        paint.setTypeface(getTypeface());
+        paint.setTextSize(textSizePx);
+        // Use extra "||" to make sure space is enough
+        String text = "|88.8" + SYMBOLS.get("M") + SYMBOLS.get("B/s");
+        paint.getTextBounds(text, 0, text.length(), bounds);
+        int width = bounds.width();
+        if (mShowIcon) {
+            width += mIconWidth;
+        }
+        return width;
+    }
 
     @Override
     protected void startTrafficUpdates() {
@@ -246,6 +273,12 @@ public class TrafficMeterOmni extends TrafficMeterAbstract {
             } else if (mMode == Mode.IN) {
                 d = mGbContext.getDrawable(R.drawable.stat_sys_network_traffic_down).mutate();
             }
+        }
+
+        if (d != null) {
+            mIconWidth = d.getIntrinsicWidth();
+        } else {
+            mIconWidth = 0;
         }
 
         setCompoundDrawablesWithIntrinsicBounds(null, null, d, null);
